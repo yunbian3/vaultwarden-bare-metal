@@ -14,7 +14,7 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/${{ github.repository }}.git .
 
-      # 2. 提取并动态获取版本号
+      # 2. 提取、刺探版本号、并按规范命名打包
       - name: Fetch Latest Vaultwarden Alpine Image and Extract
         id: get_version
         run: |
@@ -28,41 +28,35 @@ jobs:
           # 提取最新版 Vaultwarden 官方 Alpine 镜像
           ./docker-image-extract vaultwarden/server:alpine
           
-          # 建立归档目录并移动文件
+          # 建立归档目录
           mkdir -p dist
           BINARY_PATH=$(find output -name "vaultwarden" -type f | head -n 1)
           cp "$BINARY_PATH" ./dist/
           cp -r output/web-vault ./dist/
           
-          # ---------------- 关键步骤：赋予执行权限并刺探版本号 ----------------
+          # 赋予执行权限并刺探版本号
           chmod +x ./dist/vaultwarden
-          
-          # 运行 ./vaultwarden --version，它通常会输出类似 "Vaultwarden 1.36.0" 这样的文本
-          # 我们用 awk 把版本号数字（第二列）过滤出来
           VW_VER=$(./dist/vaultwarden --version | awk '{print $2}')
           echo "Captured Vaultwarden Version: v$VW_VER"
-          
-          # 将这个版本号写入 GitHub Actions 的全局输出变量中，供后面的步骤调用
           echo "version=v$VW_VER" >> $GITHUB_OUTPUT
-          # ------------------------------------------------------------------
           
-          # 压缩打包
+          # ---------------- 关键修改：按照 v2rayN 规范命名 ----------------
           cd dist
-          tar -czvf ../../vaultwarden-bare-metal.tar.gz *
+          # 打包名字变更为：vaultwarden-linux-amd64.tar.gz
+          tar -czvf ../../vaultwarden-linux-amd64.tar.gz *
+          # ---------------------------------------------------------------
           
-      # 3. 使用系统自带的 gh 工具创建带有官方版本号的 Release
+      # 3. 使用 gh 工具创建 Release 并上传标准命名的资产
       - name: Create Release and Upload Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 从上一步的输出中拿到版本号（例如 v1.36.0）
           OFFICIAL_TAG="${{ steps.get_version.outputs.version }}"
           
           echo "🚀 Creating release for official version $OFFICIAL_TAG..."
           
-          # 使用 gh 命令行发货
-          # 注意：为了防止官方长期不更新导致重复创建同版本 Tag 报错，加了 || echo 容错
-          gh release create "$OFFICIAL_TAG" vaultwarden-bare-metal.tar.gz \
+          # 使用符合 v2rayN 规范的文件名进行发货
+          gh release create "$OFFICIAL_TAG" vaultwarden-linux-amd64.tar.gz \
             --title "Vaultwarden Bare Metal $OFFICIAL_TAG" \
             --notes "This is an automated binary extraction from official \`vaultwarden/server:alpine\` ($OFFICIAL_TAG)." \
             --repo "${{ github.repository }}" || echo "Release $OFFICIAL_TAG already exists."
