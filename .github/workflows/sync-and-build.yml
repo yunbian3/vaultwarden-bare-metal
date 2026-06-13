@@ -2,8 +2,12 @@ name: Auto Extract Vaultwarden Binary
 
 on:
   schedule:
-    - cron: '0 2 * * *' # 📅 北京时间每天上午 10 点自动检查并运行
-  workflow_dispatch:      # 🚀 允许你在 GitHub 页面上点击按钮手动触发构建
+    - cron: '0 2 * * *' # 北京时间每天上午 10 点自动检查并运行
+  workflow_dispatch:      # 允许手动触发构建
+
+# ⬇️ 新增全局环境变量，强行开启 Node.js 24 完美兼容模式，抹除警告
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -17,24 +21,20 @@ jobs:
           mkdir -p tmp/output
           cd tmp
           
-          # 1. 下载之前你用过的那个免 Docker 镜像提取脚本
+          # 下载免 Docker 镜像提取脚本
           wget https://raw.githubusercontent.com/jjlin/docker-image-extract/main/docker-image-extract
           chmod +x docker-image-extract
           
-          # 2. 提取最新版 Vaultwarden 官方 Alpine 镜像
+          # 提取最新版 Vaultwarden 官方 Alpine 镜像
           ./docker-image-extract vaultwarden/server:alpine
           
-          # 3. 顺藤摸瓜找到主程序和网页端，统一移动到准备打包的临时目录
+          # 建立归档目录
           mkdir -p dist
-          
-          # 动态查找 vaultwarden 二进制文件（防止官方以后再次改路径）
           BINARY_PATH=$(find output -name "vaultwarden" -type f | head -n 1)
           cp "$BINARY_PATH" ./dist/
-          
-          # 复制网页端
           cp -r output/web-vault ./dist/
           
-          # 4. 压缩打包
+          # 压缩打包
           cd dist
           tar -czvf ../../vaultwarden-bare-metal.tar.gz *
           
@@ -49,13 +49,6 @@ jobs:
           name: Vaultwarden Bare Metal v${{ steps.date.outputs.date }}
           body: |
             This is an automated binary extraction from `vaultwarden/server:alpine`.
-            
-            **Included:**
-            - `vaultwarden` (Static Compiled Binary)
-            - `web-vault` (Frontend Assets)
-            
-            **How to deploy:**
-            Download the tar.gz asset below and extract to your VPS.
           draft: false
           prerelease: false
           files: vaultwarden-bare-metal.tar.gz
