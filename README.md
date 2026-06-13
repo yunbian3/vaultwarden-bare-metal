@@ -77,11 +77,11 @@ Plaintext
 ## 🛡️ 进阶：配置异地登录邮件报警 (SMTP)
 自建密码库后，如果需要开启新设备或异地登录邮件提醒，可以编辑你的配置文件：
 
-Bash
+```Bash
 sudo nano /etc/vaultwarden.env
 在末尾追加你的邮箱 SMTP 授权码参数（以 QQ 邮箱为例）：
 ```
-
+```bash
 Ini, TOML
 SMTP_HOST=smtp.qq.com
 SMTP_PORT=465
