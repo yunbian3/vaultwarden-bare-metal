@@ -66,7 +66,8 @@ if [ ! -f /etc/vaultwarden.env ]; then
     
     # 交互式端口获取
     while true; do
-        read -p "请输入 Vaultwarden 监听端口 [默认: 8080]: " INPUT_PORT
+        # 👈 核心修正：在这里加入了 </dev/tty，防止管道流传递时直接跳过
+        read -p "请输入 Vaultwarden 监听端口 [默认: 8080]: " INPUT_PORT </dev/tty
         # 如果直接敲回车，采用默认端口 8080
         [ -z "$INPUT_PORT" ] && INPUT_PORT=8080
         
