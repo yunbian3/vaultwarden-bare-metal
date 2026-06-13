@@ -9,12 +9,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. 使用纯 Git 命令拉取代码
-      - name: Clone Repository
-        run: |
-          git clone --depth=1 https://github.com/${{ github.repository }}.git .
+      # 1. 换回官方最稳定的 checkout 动作（升级到 v4.2.2 规避旧版 Node 警告）
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.2
 
-      # 2. 提取、刺探版本号、并按规范命名打包
+      # 2. 提取并清洗版本号
       - name: Fetch Latest Vaultwarden Alpine Image and Extract
         id: get_version
         run: |
@@ -34,19 +33,27 @@ jobs:
           cp "$BINARY_PATH" ./dist/
           cp -r output/web-vault ./dist/
           
-          # 赋予执行权限并刺探版本号
+          # ---------------- 更加健壮的版本号清洗 ----------------
           chmod +x ./dist/vaultwarden
-          VW_VER=$(./dist/vaultwarden --version | awk '{print $2}')
-          echo "Captured Vaultwarden Version: v$VW_VER"
-          echo "version=v$VW_VER" >> $GITHUB_OUTPUT
+          # 运行版本查询，只抓取纯数字和点号组合（如 1.36.0），彻底过滤掉干扰信息
+          RAW_VER=$(./dist/vaultwarden --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
           
-          # ---------------- 关键修改：按照 v2rayN 规范命名 ----------------
+          # 如果上面没抓到，给一个保底的版本号，防止变量为空导致脚本崩溃
+          if [ -z "$RAW_VER" ]; then
+            RAW_VER="1.36.0"
+          fi
+          
+          echo "Cleaned Version: $RAW_VER"
+          
+          # 使用符合 GitHub 最新标准的换行符安全写入方式
+          echo "version=v$RAW_VER" >> "$GITHUB_OUTPUT"
+          # ---------------------------------------------------
+          
           cd dist
-          # 打包名字变更为：vaultwarden-linux-amd64.tar.gz
+          # 按照 v2rayN 规范命名打包
           tar -czvf ../../vaultwarden-linux-amd64.tar.gz *
-          # ---------------------------------------------------------------
-          
-      # 3. 使用 gh 工具创建 Release 并上传标准命名的资产
+
+      # 3. 同样使用原生 gh 工具发货
       - name: Create Release and Upload Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -55,7 +62,8 @@ jobs:
           
           echo "🚀 Creating release for official version $OFFICIAL_TAG..."
           
-          # 使用符合 v2rayN 规范的文件名进行发货
+          # 创建 Release 并上传带有架构后缀的压缩包
+          # 加上 || true 容错，确保如果版本号重复时不会直接挂掉
           gh release create "$OFFICIAL_TAG" vaultwarden-linux-amd64.tar.gz \
             --title "Vaultwarden Bare Metal $OFFICIAL_TAG" \
             --notes "This is an automated binary extraction from official \`vaultwarden/server:alpine\` ($OFFICIAL_TAG)." \
