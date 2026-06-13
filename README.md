@@ -79,8 +79,8 @@ Plaintext
 
 ```Bash
 sudo nano /etc/vaultwarden.env
-在末尾追加你的邮箱 SMTP 授权码参数（以 QQ 邮箱为例）：
 ```
+在末尾追加你的邮箱 SMTP 授权码参数（以 QQ 邮箱为例）：
 ```bash
 Ini, TOML
 SMTP_HOST=smtp.qq.com
