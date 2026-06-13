@@ -4,8 +4,9 @@
 [![GitHub Release](https://img.shields.io/github/v/release/yunbian3/vaultwarden-bare-metal?color=blue&logo=github)](https://github.com/yunbian3/vaultwarden-bare-metal/releases/latest)
 
 这是一个通过 **GitHub Actions 自动化流水线** 实现的 Vaultwarden 裸机资产提取与一键部署项目。
-
+---
 由于 Vaultwarden 官方和社区默认**只发布 Docker 镜像，不直接提供预编译的二进制文件**，本项目利用 CI/CD 技术，每天定时从官方最新的 `alpine` 镜像中，逆向提取出采用**静态链接（Static Linking）**的纯净单文件二进制（Bare Metal Binary）以及前端网页包（`web-vault`），并按照标准的 Linux 服务规范提供一键安装与平滑升级脚本。
+
 ---
 ## ✨ 项目亮点
 * **极致轻量：** 拒绝 Docker 容器宿主机的额外内存与 CPU 开销，纯原生单文件运行，内存占用仅 10M~20M 左右，极其适合精简版 Debian/Ubuntu 弱鸡服务器（VPS）。
@@ -39,8 +40,9 @@ curl -Ls https://raw.githubusercontent.com/yunbian3/vaultwarden-bare-metal/main/
 ## 🔄 一键平滑升级
 当本仓库的 Releases 页面跟随官方发布了更高版本的 Tag 时，你无需手动下载。再次无脑执行上方的安装命令即可：
 
-Bash
-curl -Ls [https://raw.githubusercontent.com/yunbian3/vaultwarden-bare-metal/main/install.sh](https://raw.githubusercontent.com/yunbian3/vaultwarden-bare-metal/main/install.sh) | sudo -E bash
+```Bash
+curl -Ls https://raw.githubusercontent.com/yunbian3/vaultwarden-bare-metal/main/install.sh | sudo -E bash
+```
 脚本会智能识别到已有配置，打印出：🔄 检测到已有配置文件，将继续沿用原配置端口: XXXX，并在 3 秒内完成核心文件替换与服务重启。
 
 ## ⚠️ 卸载时的安全守则：
