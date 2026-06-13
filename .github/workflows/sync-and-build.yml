@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. 不用 actions/checkout 插件，直接用原生的 git clone 把仓库拉下来
+      # 1. 使用纯 Git 命令拉取代码，彻底告别 Node 警告
       - name: Clone Repository
         run: |
           git clone --depth=1 https://github.com/${{ github.repository }}.git .
@@ -40,7 +40,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
 
-       Alexander:
+      # 2. 使用系统自带的 gh 工具创建 Release（已剔除手抖错别字）
       - name: Create Release and Upload Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
