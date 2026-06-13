@@ -9,9 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. 显式使用支持更高 Node 版本的最新 actions/checkout
-      - name: Checkout Code
-        uses: actions/checkout@v4.2.2 # 👈 指定到修复了 node20 warning 的具体小版本，或者未来直接用 @v5
+      # 1. 不用 actions/checkout 插件，直接用原生的 git clone 把仓库拉下来
+      - name: Clone Repository
+        run: |
+          git clone --depth=1 https://github.com/${{ github.repository }}.git .
 
       - name: Fetch Latest Vaultwarden Alpine Image and Extract
         run: |
@@ -39,35 +40,16 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
 
-      # 2. 如果 softprops/action-gh-release 依然报警告，我们换成 GitHub 官方原生、维护最频繁的官方 release 工具，彻底根除第三方依赖的 Node 滞后问题
-      - name: Create GitHub Release
-        uses: actions/github-script@v7 # 👈 官方脚本原生完美支持最新 Node 环境
-        with:
-          script: |
-            const fs = require('fs');
-            const tag = 'v' + '${{ steps.date.outputs.date }}';
-            
-            // 创建 release
-            const release = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: tag,
-              name: `Vaultwarden Bare Metal ${tag}`,
-              body: 'This is an automated binary extraction from `vaultwarden/server:alpine`.',
-              draft: false,
-              prerelease: false
-            });
-            
-            // 上传打包好的资产文件
-            const fileData = fs.readFileSync('vaultwarden-bare-metal.tar.gz');
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: 'vaultwarden-bare-metal.tar.gz',
-              data: fileData,
-              headers: {
-                'content-type': 'application/gzip',
-                'content-length': fileData.length
-              }
-            });
+       Alexander:
+      - name: Create Release and Upload Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="v${{ steps.date.outputs.date }}"
+          
+          echo "🚀 Creating release for $TAG_NAME..."
+          
+          gh release create "$TAG_NAME" vaultwarden-bare-metal.tar.gz \
+            --title "Vaultwarden Bare Metal $TAG_NAME" \
+            --notes "This is an automated binary extraction from \`vaultwarden/server:alpine\`." \
+            --repo "${{ github.repository }}"
