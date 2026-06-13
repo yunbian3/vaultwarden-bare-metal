@@ -2,68 +2,69 @@ name: Auto Extract Vaultwarden Binary
 
 on:
   schedule:
-    - cron: '0 2 * * *' # 北京时间每天上午 10 点自动检查并运行
-  workflow_dispatch:      # 允许手动触发构建
+    - cron: '0 2 * * *' 
+  workflow_dispatch:      
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. 换回官方最稳定的 checkout 动作（升级到 v4.2.2 规避旧版 Node 警告）
+      
       - name: Checkout Code
         uses: actions/checkout@v4.2.2
 
-      # 2. 提取并清洗版本号
+     
       - name: Fetch Latest Vaultwarden Alpine Image and Extract
         id: get_version
         run: |
           mkdir -p tmp/output
           cd tmp
           
-          # 下载免 Docker 镜像提取脚本
+      
           wget https://raw.githubusercontent.com/jjlin/docker-image-extract/main/docker-image-extract
           chmod +x docker-image-extract
           
-          # 提取最新版 Vaultwarden 官方 Alpine 镜像
+          
           ./docker-image-extract vaultwarden/server:alpine
           
-          # 建立归档目录
+         
           mkdir -p dist
           BINARY_PATH=$(find output -name "vaultwarden" -type f | head -n 1)
           cp "$BINARY_PATH" ./dist/
           cp -r output/web-vault ./dist/
           
-          # ---------------- 更加健壮的版本号清洗 ----------------
+        
           chmod +x ./dist/vaultwarden
-          # 运行版本查询，只抓取纯数字和点号组合（如 1.36.0），彻底过滤掉干扰信息
+          
+         
           RAW_VER=$(./dist/vaultwarden --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
           
-          # 如果上面没抓到，给一个保底的版本号，防止变量为空导致脚本崩溃
+        
           if [ -z "$RAW_VER" ]; then
-            RAW_VER="1.36.0"
+            RAW_VER="0.0.0"
           fi
           
           echo "Cleaned Version: $RAW_VER"
           
-          # 使用符合 GitHub 最新标准的换行符安全写入方式
+         
           echo "version=v$RAW_VER" >> "$GITHUB_OUTPUT"
-          # ---------------------------------------------------
+         
           
           cd dist
-          # 按照 v2rayN 规范命名打包
+         
           tar -czvf ../../vaultwarden-linux-amd64.tar.gz *
 
-      # 3. 同样使用原生 gh 工具发货
+     
       - name: Create Release and Upload Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+         
           OFFICIAL_TAG="${{ steps.get_version.outputs.version }}"
           
           echo "🚀 Creating release for official version $OFFICIAL_TAG..."
           
-          # 创建 Release 并上传带有架构后缀的压缩包
-          # 加上 || true 容错，确保如果版本号重复时不会直接挂掉
+         
           gh release create "$OFFICIAL_TAG" vaultwarden-linux-amd64.tar.gz \
             --title "Vaultwarden Bare Metal $OFFICIAL_TAG" \
             --notes "This is an automated binary extraction from official \`vaultwarden/server:alpine\` ($OFFICIAL_TAG)." \
