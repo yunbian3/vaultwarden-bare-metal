@@ -73,25 +73,7 @@ Plaintext
     ├── web-vault/                 # 前端网页静态资产包
     └── data/                      # 🔒 你的核心密码数据库 (请务必定期备份此目录！)
 
-```
-## 🛡️ 进阶：配置异地登录邮件报警 (SMTP)
-自建密码库后，如果需要开启新设备或异地登录邮件提醒，可以编辑你的配置文件：
-
-```Bash
-sudo nano /etc/vaultwarden.env
-```
-在末尾追加你的邮箱 SMTP 授权码参数（以 QQ 邮箱为例）：
-```bash
-Ini, TOML
-SMTP_HOST=smtp.qq.com
-SMTP_PORT=465
-SMTP_SECURITY=force_tls
-SMTP_USERNAME=你的QQ号@qq.com
-SMTP_PASSWORD=你的十几位纯字母邮箱授权码
-SMTP_FROM=你的QQ号@qq.com
-SMTP_FROM_NAME=Vaultwarden 密码库
-保存退出后，运行 sudo systemctl restart vaultwarden 即可激活报警链路。
-```
+---
 ## ⚖️ 免责声明 (License)
 本项目仅作为个人技术探索与自动化构建学术交流使用。
 项目提取的二进制及网页端核心知识产权归 Vaultwarden 官方开源社区 所有。请确保不要将自建密码服务暴露在无 SSL 保护的公网环境中。
